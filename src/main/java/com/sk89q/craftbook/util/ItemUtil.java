@@ -498,6 +498,8 @@ public final class ItemUtil {
         switch (item.getType()) {
             case COBBLESTONE:
                 return new ItemStack(Material.STONE);
+            case STONE:
+                return new ItemStack(Material.SMOOTH_STONE);
             case CACTUS:
                 return new ItemStack(Material.CACTUS_GREEN);
             case IRON_ORE:
@@ -659,6 +661,7 @@ public final class ItemUtil {
         switch(item.getType()) {
             case COAL:
             case COAL_BLOCK:
+            case CHARCOAL:
             case WOODEN_AXE:
             case WOODEN_HOE:
             case WOODEN_PICKAXE:

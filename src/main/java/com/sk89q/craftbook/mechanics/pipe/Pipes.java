@@ -28,6 +28,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dropper;
 import org.bukkit.block.Furnace;
 import org.bukkit.block.Jukebox;
+import org.bukkit.block.Container;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Piston;
@@ -244,10 +245,7 @@ public class Pipes extends AbstractCraftBookMechanic {
                 Bukkit.getPluginManager().callEvent(event);
 
                 if (!event.isCancelled()) {
-                    if (InventoryUtil.doesBlockHaveInventory(fac)) {
-                        InventoryHolder holder = (InventoryHolder) fac.getState();
-                        newItems.addAll(InventoryUtil.addItemsToInventory(holder, event.getItems().toArray(new ItemStack[event.getItems().size()])));
-                    } else if (fac.getType() == Material.JUKEBOX) {
+                    if (fac.getType() == Material.JUKEBOX) {
                         Jukebox juke = (Jukebox) fac.getState();
                         List<ItemStack> its = new ArrayList<>(event.getItems());
                         if (juke.getPlaying() != Material.AIR) {
@@ -262,6 +260,9 @@ public class Pipes extends AbstractCraftBookMechanic {
                             }
                         }
                         newItems.addAll(its);
+                    } else if (fac.getState() instanceof Container) {
+                        InventoryHolder holder = (InventoryHolder) fac.getState();
+                        newItems.addAll(InventoryUtil.addItemsToInventory(holder, event.getItems().toArray(new ItemStack[event.getItems().size()])));
                     } else {
                         newItems.addAll(event.getItems());
                     }
@@ -368,38 +369,7 @@ public class Pipes extends AbstractCraftBookMechanic {
             Piston p = (Piston) block.getBlockData();
             Block fac = block.getRelative(p.getFacing());
 
-            if (fac.getType() == Material.CHEST || fac.getType() == Material.TRAPPED_CHEST || fac.getType() == Material.DROPPER || fac.getType() == Material.DISPENSER || fac.getType() == Material.HOPPER) {
-
-                for (ItemStack stack : ((InventoryHolder) fac.getState()).getInventory().getContents()) {
-
-                    if (!ItemUtil.isStackValid(stack))
-                        continue;
-
-                    if(!ItemUtil.doesItemPassFilters(stack, filters, exceptions))
-                        continue;
-
-                    items.add(stack);
-                    ((InventoryHolder) fac.getState()).getInventory().removeItem(stack);
-                    if (pipeStackPerPull)
-                        break;
-                }
-
-                PipeSuckEvent event = new PipeSuckEvent(block, new ArrayList<>(items), fac);
-                Bukkit.getPluginManager().callEvent(event);
-                items.clear();
-                items.addAll(event.getItems());
-                if(!event.isCancelled()) {
-                    visitedPipes.add(fac.getLocation().toVector());
-                    searchNearbyPipes(block, visitedPipes, items, 0);
-                }
-
-                if (!items.isEmpty()) {
-                    for (ItemStack item : items) {
-                        if (item == null) continue;
-                        leftovers.addAll(((InventoryHolder) fac.getState()).getInventory().addItem(item).values());
-                    }
-                }
-            } else if (fac.getType() == Material.FURNACE) {
+            if (fac.getType() == Material.FURNACE) {
 
                 Furnace f = (Furnace) fac.getState();
                 if(!ItemUtil.doesItemPassFilters(f.getInventory().getResult(), filters, exceptions))
@@ -450,6 +420,37 @@ public class Pipes extends AbstractCraftBookMechanic {
                     } else {
                         juke.setPlaying(Material.AIR);
                         juke.update();
+                    }
+                }
+            } else if (fac.getState() instanceof Container) {
+
+                for (ItemStack stack : ((InventoryHolder) fac.getState()).getInventory().getContents()) {
+
+                    if (!ItemUtil.isStackValid(stack))
+                        continue;
+
+                    if(!ItemUtil.doesItemPassFilters(stack, filters, exceptions))
+                        continue;
+
+                    items.add(stack);
+                    ((InventoryHolder) fac.getState()).getInventory().removeItem(stack);
+                    if (pipeStackPerPull)
+                        break;
+                }
+
+                PipeSuckEvent event = new PipeSuckEvent(block, new ArrayList<>(items), fac);
+                Bukkit.getPluginManager().callEvent(event);
+                items.clear();
+                items.addAll(event.getItems());
+                if(!event.isCancelled()) {
+                    visitedPipes.add(fac.getLocation().toVector());
+                    searchNearbyPipes(block, visitedPipes, items, 0);
+                }
+
+                if (!items.isEmpty()) {
+                    for (ItemStack item : items) {
+                        if (item == null) continue;
+                        leftovers.addAll(((InventoryHolder) fac.getState()).getInventory().addItem(item).values());
                     }
                 }
             } else {
